@@ -7,7 +7,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG VPNKIT_DIGEST=e508a17cfacc8fd39261d5b4e397df2b953690da577e2c987a47630cd0c42f8e
 ARG DOCKER_BUILDTAGS="no_btrfs no_cri no_devmapper no_zfs exclude_disk_quota exclude_graphdriver_btrfs exclude_graphdriver_devicemapper exclude_graphdriver_zfs no_buildkit"
 
-FROM golang:${GO_VERSION}-stretch AS base
+FROM golang:${GO_VERSION}-buster AS base
 RUN echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache
 ARG APT_MIRROR
 RUN sed -ri "s/(httpredir|deb).debian.org/${APT_MIRROR:-deb.debian.org}/g" /etc/apt/sources.list \
@@ -114,9 +114,9 @@ RUN --mount=type=cache,sharing=locked,id=moby-cross-false-aptlib,target=/var/lib
     --mount=type=cache,sharing=locked,id=moby-cross-false-aptcache,target=/var/cache/apt \
         apt-get update && apt-get install -y --no-install-recommends \
             binutils-mingw-w64 \
-            btrfs-tools \
             g++-mingw-w64-x86-64 \
             libapparmor-dev \
+            libbtrfs-dev \
             libdevmapper-dev \
             libseccomp-dev \
             libsystemd-dev \
