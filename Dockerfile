@@ -139,6 +139,7 @@ FROM runtime-dev-cross-${CROSS} AS runtime-dev
 
 FROM base AS tomlv
 ENV INSTALL_BINARY_NAME=tomlv
+ARG TOMLV_COMMIT
 COPY hack/dockerfile/install/install.sh ./install.sh
 COPY hack/dockerfile/install/$INSTALL_BINARY_NAME.installer ./
 RUN --mount=type=cache,target=/root/.cache/go-build \
@@ -147,6 +148,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 
 FROM base AS vndr
 ENV INSTALL_BINARY_NAME=vndr
+ARG VNDR_COMMIT
 COPY hack/dockerfile/install/install.sh ./install.sh
 COPY hack/dockerfile/install/$INSTALL_BINARY_NAME.installer ./
 RUN --mount=type=cache,target=/root/.cache/go-build \
@@ -155,6 +157,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 
 FROM base AS golangci_lint
 ENV INSTALL_BINARY_NAME=golangci_lint
+ARG GOLANGCI_LINT_COMMIT
 COPY hack/dockerfile/install/install.sh ./install.sh
 COPY hack/dockerfile/install/$INSTALL_BINARY_NAME.installer ./
 RUN --mount=type=cache,target=/root/.cache/go-build \
@@ -163,6 +166,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 
 FROM base AS gotestsum
 ENV INSTALL_BINARY_NAME=gotestsum
+ARG GOTESTSUM_COMMIT
 COPY hack/dockerfile/install/install.sh ./install.sh
 COPY hack/dockerfile/install/$INSTALL_BINARY_NAME.installer ./
 RUN --mount=type=cache,target=/root/.cache/go-build \
@@ -171,6 +175,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 
 FROM dev-base AS tini
 ARG DEBIAN_FRONTEND
+ARG TINI_COMMIT
 RUN --mount=type=cache,sharing=locked,id=moby-tini-aptlib,target=/var/lib/apt \
 	--mount=type=cache,sharing=locked,id=moby-tini-aptcache,target=/var/cache/apt \
 		apt-get update && apt-get install -y --no-install-recommends \
@@ -185,6 +190,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 
 FROM dev-base AS rootlesskit
 ENV INSTALL_BINARY_NAME=rootlesskit
+ARG ROOTLESSKIT_COMMIT
 COPY hack/dockerfile/install/install.sh ./install.sh
 COPY hack/dockerfile/install/$INSTALL_BINARY_NAME.installer ./
 RUN --mount=type=cache,target=/root/.cache/go-build \
