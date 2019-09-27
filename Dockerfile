@@ -26,7 +26,7 @@
 
 ARG CROSS="false"
 # IMPORTANT: When updating this please note that stdlib archive/tar pkg is vendored
-ARG GO_VERSION=1.13.0
+ARG GO_VERSION=1.13.1
 ARG DEBIAN_FRONTEND=noninteractive
 
 FROM golang:${GO_VERSION}-stretch AS base
