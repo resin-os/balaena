@@ -137,6 +137,26 @@ endif
 
 DOCKER_RUN_DOCKER := $(DOCKER_FLAGS) "$(DOCKER_IMAGE)"
 
+DOCKER_BUILD_ARGS += --build-arg=GO_VERSION
+BUILD_OPTS := ${BUILD_APT_MIRROR} ${DOCKER_BUILD_ARGS} ${DOCKER_BUILD_OPTS} -f "$(DOCKERFILE)"
+ifdef USE_BUILDX
+BUILD_OPTS += $(BUILDX_BUILD_EXTRA_OPTS)
+BUILD_CMD := $(BUILDX) build
+else
+BUILD_CMD := $(DOCKER) build
+endif
+
+# This is used for the legacy "build" target and anything still depending on it
+BUILD_CROSS =
+ifdef DOCKER_CROSS
+BUILD_CROSS = --build-arg CROSS=$(DOCKER_CROSS)
+endif
+ifdef DOCKER_CROSSPLATFORMS
+BUILD_CROSS = --build-arg CROSS=true
+endif
+
+VERSION_AUTOGEN_ARGS = --build-arg VERSION --build-arg DOCKER_GITCOMMIT --build-arg PRODUCT --build-arg PLATFORM --build-arg DEFAULT_PRODUCT_LICENSE
+
 default: binary
 
 all: build ## validate all checks, build linux binaries, run all tests\ncross build non-linux binaries and generate archives
@@ -148,6 +168,15 @@ binary: build ## build the linux binaries
 balena: build ## build the linux consolidate binary
 	$(DOCKER_RUN_DOCKER) hack/make.sh dynbinary-balena
 
+# This is only used to work around read-only bind mounts of the source code into
+# binary build targets. We end up mounting a tmpfs over autogen which allows us
+# to write build-time generated assets even though the source is mounted read-only
+# ...But in order to do so, this dir needs to already exist.
+autogen:
+	mkdir -p autogen
+
+binary dynbinary cross: buildx autogen
+	$(BUILD_CMD) $(BUILD_OPTS) --output=bundles/ --target=$@ $(VERSION_AUTOGEN_ARGS) .
 
 
 cross: DOCKER_BUILD_ARGS += --output=bundles/ --target=cross --build-arg DOCKER_CROSSPLATFORMS=$(DOCKER_CROSSPLATFORMS)
@@ -240,3 +269,30 @@ swagger-docs: ## preview the API documentation
 		-e 'REDOC_OPTIONS=hide-hostname="true" lazy-rendering' \
 		-p $(SWAGGER_DOCS_PORT):80 \
 		bfirsh/redoc:1.6.2
+
+.PHONY: buildx
+ifdef USE_BUILDX
+ifeq ($(BUILDX), bundles/buildx)
+buildx: bundles/buildx ## build buildx cli tool
+endif
+endif
+
+# This intentionally is not using the `--output` flag from the docker CLI, which
+# is a buildkit option. The idea here being that if buildx is being used, it's
+# because buildkit is not supported natively
+bundles/buildx: bundles ## build buildx CLI tool
+	docker build -f $${BUILDX_DOCKERFILE:-Dockerfile.buildx} -t "moby-buildx:$${BUILDX_COMMIT:-latest}" \
+		--build-arg BUILDX_COMMIT \
+		--build-arg BUILDX_REPO \
+		--build-arg GOOS=$$(if [ -n "$(GOOS)" ]; then echo $(GOOS); else go env GOHOSTOS || uname | awk '{print tolower($$0)}' || true; fi) \
+		--build-arg GOARCH=$$(if [ -n "$(GOARCH)" ]; then echo $(GOARCH); else go env GOHOSTARCH || true; fi) \
+		.
+
+	id=$$(docker create moby-buildx:$${BUILDX_COMMIT:-latest}); \
+	if [ -n "$${id}" ]; then \
+		docker cp $${id}:/usr/bin/buildx $@ \
+		&& touch $@; \
+		docker rm -f $${id}; \
+	fi
+
+	$@ version
