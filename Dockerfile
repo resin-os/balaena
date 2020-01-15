@@ -146,43 +146,38 @@ FROM runtime-dev-cross-${CROSS} AS runtime-dev
 
 FROM base AS tomlv
 ARG TOMLV_COMMIT
-COPY hack/dockerfile/install/install.sh ./install.sh
-COPY hack/dockerfile/install/tomlv.installer ./
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
-        PREFIX=/build ./install.sh tomlv
+    --mount=type=bind,src=hack/dockerfile/install,target=/tmp/install \
+        PREFIX=/build /tmp/install/install.sh tomlv
 
 FROM base AS vndr
 ARG VNDR_COMMIT
-COPY hack/dockerfile/install/install.sh ./install.sh
-COPY hack/dockerfile/install/vndr.installer ./
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
-        PREFIX=/build ./install.sh vndr
+    --mount=type=bind,src=hack/dockerfile/install,target=/tmp/install \
+        PREFIX=/build /tmp/install/install.sh vndr
 
 FROM base AS golangci_lint
 ARG GOLANGCI_LINT_COMMIT
-COPY hack/dockerfile/install/install.sh ./install.sh
-COPY hack/dockerfile/install/golangci_lint.installer ./
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
-        PREFIX=/build ./install.sh golangci_lint
+    --mount=type=bind,src=hack/dockerfile/install,target=/tmp/install \
+        PREFIX=/build /tmp/install/install.sh golangci_lint
 
 FROM base AS gotestsum
 ARG GOTESTSUM_COMMIT
-COPY hack/dockerfile/install/install.sh ./install.sh
-COPY hack/dockerfile/install/gotestsum.installer ./
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
-        PREFIX=/build ./install.sh gotestsum
+    --mount=type=bind,src=hack/dockerfile/install,target=/tmp/install \
+        PREFIX=/build /tmp/install/install.sh gotestsum
 
 FROM base AS shfmt
 ARG SHFMT_COMMIT
-COPY hack/dockerfile/install/install.sh ./install.sh
-COPY hack/dockerfile/install/shfmt.installer ./
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
-        PREFIX=/build ./install.sh shfmt
+    --mount=type=bind,src=hack/dockerfile/install,target=/tmp/install \
+        PREFIX=/build /tmp/install/install.sh shfmt
 
 FROM dev-base AS tini
 ARG DEBIAN_FRONTEND
@@ -192,19 +187,17 @@ RUN --mount=type=cache,sharing=locked,id=moby-tini-aptlib,target=/var/lib/apt \
         apt-get update && apt-get install -y --no-install-recommends \
             cmake \
             vim-common
-COPY hack/dockerfile/install/install.sh ./install.sh
-COPY hack/dockerfile/install/tini.installer ./
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
-        PREFIX=/build ./install.sh tini
+    --mount=type=bind,src=hack/dockerfile/install,target=/tmp/install \
+        PREFIX=/build /tmp/install/install.sh tini
 
 FROM dev-base AS rootlesskit
 ARG ROOTLESSKIT_COMMIT
-COPY hack/dockerfile/install/install.sh ./install.sh
-COPY hack/dockerfile/install/rootlesskit.installer ./
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
-        PREFIX=/build/ ./install.sh rootlesskit
+    --mount=type=bind,src=hack/dockerfile/install,target=/tmp/install \
+        PREFIX=/build /tmp/install/install.sh rootlesskit
 COPY ./contrib/dockerd-rootless.sh /build
 
 FROM djs55/vpnkit:${VPNKIT_VERSION} AS vpnkit
