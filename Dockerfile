@@ -289,6 +289,7 @@ ENV PREFIX=/build
 # It would be nice to handle this in a different way.
 COPY --from=tini        /build/ /usr/local/bin/
 COPY --from=rootlesskit /build/ /usr/local/bin/
+COPY --from=vpnkit      /vpnkit /usr/local/bin/vpnkit.x86_64
 WORKDIR /go/src/github.com/docker/docker
 
 FROM binary-base AS build-binary
