@@ -36,6 +36,7 @@ type testingT interface {
 type namer interface {
 	Name() string
 }
+
 type testNamer interface {
 	TestName() string
 }
@@ -44,8 +45,10 @@ type logT interface {
 	Logf(string, ...interface{})
 }
 
-const defaultDockerdBinary = "balena-engine-daemon"
-const containerdSocket = "/var/run/balena-engine/containerd/balena-engine-containerd.sock"
+const (
+	defaultDockerdBinary = "balena-engine-daemon"
+	containerdSocket     = "/var/run/balena-engine/containerd/balena-engine-containerd.sock"
+)
 
 var errDaemonNotStarted = errors.New("daemon not started")
 
@@ -107,6 +110,8 @@ func New(t testingT, ops ...func(*Daemon)) *Daemon {
 	}
 	t.Logf("Creating a new daemon at: %s", dest)
 	assert.Check(t, dest != "", "Please set the DOCKER_INTEGRATION_DAEMON_DEST or the DEST environment variable")
+
+	assert.Check(t, os.Getenv("DOCKER_ROOTLESS") == "", "github.com/docker/docker/testutil/daemon.Daemon doesn't support DOCKER_ROOTLESS")
 
 	storageDriver := os.Getenv("DOCKER_GRAPHDRIVER")
 
@@ -213,6 +218,7 @@ func (d *Daemon) Start(t testingT, args ...string) {
 	if ht, ok := t.(test.HelperT); ok {
 		ht.Helper()
 	}
+	assert.Check(t, os.Getenv("DOCKER_ROOTLESS") == "", "github.com/docker/docker/testutil/daemon.Daemon doesn't support DOCKER_ROOTLESS")
 	if err := d.StartWithError(args...); err != nil {
 		t.Fatalf("failed to start daemon with arguments %v : %v", args, err)
 	}
