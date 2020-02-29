@@ -178,6 +178,15 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
         PREFIX=/build ./install.sh $INSTALL_BINARY_NAME
 
+FROM base AS shfmt
+ENV INSTALL_BINARY_NAME=shfmt
+ARG SHFMT_COMMIT
+COPY hack/dockerfile/install/install.sh ./install.sh
+COPY hack/dockerfile/install/$INSTALL_BINARY_NAME.installer ./
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=cache,target=/go/pkg/mod \
+        PREFIX=/build ./install.sh $INSTALL_BINARY_NAME
+
 FROM dev-base AS tini
 ARG DEBIAN_FRONTEND
 ARG TINI_COMMIT
@@ -261,6 +270,7 @@ COPY --from=criu          /build/ /usr/local/
 COPY --from=vndr          /build/ /usr/local/bin/
 COPY --from=gotestsum     /build/ /usr/local/bin/
 COPY --from=golangci_lint /build/ /usr/local/bin/
+COPY --from=shfmt         /build/ /usr/local/bin/
 COPY --from=rootlesskit   /build/ /usr/local/bin/
 COPY --from=vpnkit        /vpnkit /usr/local/bin/vpnkit.x86_64
 ENV PATH=/usr/local/cli:$PATH
