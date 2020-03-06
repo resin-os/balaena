@@ -295,6 +295,8 @@ RUN mkdir -p hack \
   && chmod +x hack/dind-systemd
 ENTRYPOINT ["hack/dind-systemd"]
 
+FROM dev-systemd-${SYSTEMD} AS dev
+
 FROM runtime-dev AS binary-base
 ARG DOCKER_GITCOMMIT=HEAD
 ENV DOCKER_GITCOMMIT=${DOCKER_GITCOMMIT}
@@ -343,5 +345,5 @@ COPY --from=build-dynbinary /build/bundles/ /
 FROM scratch AS cross
 COPY --from=build-cross /build/bundles/ /
 
-FROM dev-systemd-${SYSTEMD} AS final
+FROM dev AS final
 COPY . /go/src/github.com/docker/docker
