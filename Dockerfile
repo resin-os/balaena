@@ -7,8 +7,9 @@ ARG GO_VERSION=1.13.8
 ARG DEBIAN_FRONTEND=noninteractive
 ARG VPNKIT_VERSION=0.4.0
 ARG DOCKER_BUILDTAGS="no_btrfs no_cri no_devmapper no_zfs exclude_disk_quota exclude_graphdriver_btrfs exclude_graphdriver_devicemapper exclude_graphdriver_zfs no_buildkit"
+ARG GOLANG_IMAGE="golang:${GO_VERSION}-buster"
 
-FROM golang:${GO_VERSION}-buster AS base
+FROM ${GOLANG_IMAGE} AS base
 RUN echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache
 ARG APT_MIRROR
 RUN sed -ri "s/(httpredir|deb).debian.org/${APT_MIRROR:-deb.debian.org}/g" /etc/apt/sources.list \
