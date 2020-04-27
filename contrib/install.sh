@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -eo pipefail
+set -e
 
 tag="v17.12.0"
 tag=$(echo "$tag" | sed 's|+|.|g')
@@ -68,7 +68,10 @@ for cmd in curl tar; do
 done
 [ $abort ] && exit 1
 
-curl -sL "$url" | $sudo tar xzv -C /usr/local/bin --strip-components=1
+tarball="/usr/local/bin/balena-engine-${tag}-${arch}.tar.gz"
+$sudo curl -sSL "$url" --continue-at "-" --output "$tarball"
+$sudo tar xzfv "$tarball" -C /usr/local/bin --strip-components=1
+$sudo rm -f "$tarball"
 
 cat <<-EOF
 
