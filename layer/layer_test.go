@@ -67,17 +67,23 @@ func newTestStore(t *testing.T) (Store, string, func()) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	return newTestStoreWithLayersCleanup(t, td, 0)
+}
 
+func newTestStoreWithLayersCleanup(t *testing.T, dir string, expectedCleanupCount int) (Store, string, func()) {
 	graph, graphcleanup := newTestGraphDriver(t)
 
-	ls, err := newStoreFromGraphDriver(td, graph, runtime.GOOS)
+	ls, cc, err := newStoreFromGraphDriver(dir, graph, runtime.GOOS)
 	if err != nil {
 		t.Fatal(err)
 	}
+	if expectedCleanupCount != cc {
+		t.Errorf("Expected %d layers cleanup reported, got %d", expectedCleanupCount, cc)
+	}
 
-	return ls, td, func() {
+	return ls, dir, func() {
 		graphcleanup()
-		os.RemoveAll(td)
+		os.RemoveAll(dir)
 	}
 }
 
@@ -400,9 +406,12 @@ func TestStoreRestore(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ls2, err := newStoreFromGraphDriver(ls.(*layerStore).store.root, ls.(*layerStore).driver, runtime.GOOS)
+	ls2, cleanupCount, err := newStoreFromGraphDriver(ls.(*layerStore).store.root, ls.(*layerStore).driver, runtime.GOOS)
 	if err != nil {
 		t.Fatal(err)
+	}
+	if cleanupCount != 0 {
+		t.Fatal("Unexpected layerStore cleanup")
 	}
 
 	layer3b, err := ls2.Get(layer3.ChainID())

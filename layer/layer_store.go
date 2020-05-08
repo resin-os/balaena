@@ -54,7 +54,7 @@ type StoreOptions struct {
 }
 
 // NewStoreFromOptions creates a new Store instance
-func NewStoreFromOptions(options StoreOptions) (Store, error) {
+func NewStoreFromOptions(options StoreOptions) (Store, int, error) {
 	driver, err := graphdriver.New(options.GraphDriver, options.PluginGetter, graphdriver.Options{
 		Root:                options.Root,
 		DriverOptions:       options.GraphDriverOptions,
@@ -63,7 +63,7 @@ func NewStoreFromOptions(options StoreOptions) (Store, error) {
 		ExperimentalEnabled: options.ExperimentalEnabled,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("error initializing graphdriver: %v", err)
+		return nil, 0, fmt.Errorf("error initializing graphdriver: %v", err)
 	}
 	logrus.Debugf("Initialized graph driver %s", driver)
 
@@ -74,9 +74,9 @@ func NewStoreFromOptions(options StoreOptions) (Store, error) {
 
 // newStoreFromGraphDriver creates a new Store instance using the provided
 // root directory and graph driver. The data in the root directory will be used to restore the Store.
-func newStoreFromGraphDriver(root string, driver graphdriver.Driver, os string) (Store, error) {
+func newStoreFromGraphDriver(root string, driver graphdriver.Driver, os string) (Store, int, error) {
 	if !system.IsOSSupported(os) {
-		return nil, fmt.Errorf("failed to initialize layer store as operating system '%s' is not supported", os)
+		return nil, 0, fmt.Errorf("failed to initialize layer store as operating system '%s' is not supported", os)
 	}
 	caps := graphdriver.Capabilities{}
 	if capDriver, ok := driver.(graphdriver.CapabilityDriver); ok {
@@ -85,7 +85,7 @@ func newStoreFromGraphDriver(root string, driver graphdriver.Driver, os string) 
 
 	ms, err := newFSMetadataStore(root)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	ls := &layerStore{
@@ -99,7 +99,7 @@ func newStoreFromGraphDriver(root string, driver graphdriver.Driver, os string) 
 
 	ids, mounts, err := ms.List()
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	for _, id := range ids {
@@ -123,7 +123,7 @@ func newStoreFromGraphDriver(root string, driver graphdriver.Driver, os string) 
 	// It's a good moment to run the clean up procedure.
 	txData, err := ls.store.ListExistingTransactions()
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	// To heal already affected devices, we also try to get the unused FS layers using
@@ -137,18 +137,21 @@ func newStoreFromGraphDriver(root string, driver graphdriver.Driver, os string) 
 	// Data deletion can take time. So once we identify what needs to be deleted,
 	// we start the operation in background.
 	go func() {
-		totalDeletionsCount := 0
-
 		deletedCacheIDs := ls.prune(txData)
-		totalDeletionsCount += len(deletedCacheIDs)
-		totalDeletionsCount += ls.deleteUnreferencedDriverLayers(leakedDriverLayers)
+		gdDeletedCount := ls.deleteUnreferencedDriverLayers(leakedDriverLayers)
 
-		if totalDeletionsCount > 0 {
-			logrus.Infof("Pruned %d unused graph driver layers", totalDeletionsCount)
+		if len(deletedCacheIDs) > 0 || gdDeletedCount > 0 {
+			logrus.Infof("Pruned unused layers data: tx count = %d, layers referred from tx = %d, unreferenced gd layers = %d",
+				len(txData), deletedCacheIDs, gdDeletedCount)
 		}
 	}()
 
-	return ls, nil
+	cleanupCount := len(txData)
+	if cleanupCount == 0 {
+		cleanupCount = len(leakedDriverLayers)
+	}
+
+	return ls, cleanupCount, nil
 }
 
 func (ls *layerStore) Driver() graphdriver.Driver {

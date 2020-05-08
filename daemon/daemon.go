@@ -15,6 +15,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -845,7 +846,8 @@ func NewDaemon(ctx context.Context, config *config.Config, pluginStore *plugin.S
 	}
 
 	for operatingSystem, gd := range d.graphDrivers {
-		layerStores[operatingSystem], err = layer.NewStoreFromOptions(layer.StoreOptions{
+		var cleanupCount int
+		layerStores[operatingSystem], cleanupCount, err = layer.NewStoreFromOptions(layer.StoreOptions{
 			Root:                      config.Root,
 			MetadataStorePathTemplate: filepath.Join(config.Root, "image", "%s", "layerdb"),
 			GraphDriver:               gd,
@@ -858,11 +860,17 @@ func NewDaemon(ctx context.Context, config *config.Config, pluginStore *plugin.S
 		if err != nil {
 			return nil, err
 		}
+
+		if cleanupCount > 0 {
+			d.LogDaemonEventWithAttributes("layersCleanup", map[string]string{
+				"layersCount": strconv.Itoa(cleanupCount),
+			})
+		}
 	}
 
 	var deltaStore image.Store
 	if config.DeltaRoot != "" && config.DeltaGraphDriver != "" {
-		ls, err := layer.NewStoreFromOptions(layer.StoreOptions{
+		ls, cleanupCount, err := layer.NewStoreFromOptions(layer.StoreOptions{
 			Root:                      config.DeltaRoot,
 			MetadataStorePathTemplate: filepath.Join(config.DeltaRoot, "image", "%s", "layerdb"),
 			GraphDriver:               config.DeltaGraphDriver,
@@ -874,6 +882,12 @@ func NewDaemon(ctx context.Context, config *config.Config, pluginStore *plugin.S
 		})
 		if err != nil {
 			return nil, err
+		}
+
+		if cleanupCount > 0 {
+			d.LogDaemonEventWithAttributes("deltasCleanup", map[string]string{
+				"layersCount": strconv.Itoa(cleanupCount),
+			})
 		}
 
 		imageRoot := filepath.Join(config.DeltaRoot, "image", ls.DriverName())

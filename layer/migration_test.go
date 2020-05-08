@@ -77,9 +77,12 @@ func TestLayerMigration(t *testing.T) {
 		t.Fatal(err)
 	}
 	root := filepath.Join(td, "layers")
-	ls, err := newStoreFromGraphDriver(root, graph, runtime.GOOS)
+	ls, cleanupCount, err := newStoreFromGraphDriver(root, graph, runtime.GOOS)
 	if err != nil {
 		t.Fatal(err)
+	}
+	if cleanupCount != 0 {
+		t.Fatal("Unexpected layers cleanup")
 	}
 
 	graphID1 := stringid.GenerateRandomID()
@@ -202,9 +205,12 @@ func TestLayerMigrationNoTarsplit(t *testing.T) {
 		t.Fatal(err)
 	}
 	root := filepath.Join(td, "layers")
-	ls, err := newStoreFromGraphDriver(root, graph, runtime.GOOS)
+	ls, cleanupCount, err := newStoreFromGraphDriver(root, graph, runtime.GOOS)
 	if err != nil {
 		t.Fatal(err)
+	}
+	if cleanupCount != 0 {
+		t.Fatal("Unexpected layers cleanup")
 	}
 
 	graphID1 := stringid.GenerateRandomID()

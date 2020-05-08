@@ -10,6 +10,24 @@ import (
 	"gotest.tools/skip"
 )
 
+func TestLayerStore_pruneOnCreate(t *testing.T) {
+	s, _, cleanupOriginal := newTestStore(t)
+	defer cleanupOriginal()
+
+	lStore, ok := s.(*layerStore)
+	if !ok {
+		t.Fatalf("Unexpected store implementation %s", s)
+	}
+
+	_, err := lStore.store.StartTransaction("test-prune-on-start")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, _, cleanup := newTestStoreWithLayersCleanup(t, lStore.store.root, 1)
+	defer cleanup()
+}
+
 func TestLayerStore_prune(t *testing.T) {
 	s, _, cleanup := newTestStore(t)
 	defer cleanup()
