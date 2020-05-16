@@ -1,11 +1,13 @@
-ARG GO_VERSION=1.12.10
-FROM golang:${GO_VERSION}-stretch
+ARG GO_VERSION=1.13.11
+ARG BUILDX_COMMIT=v0.3.1
 ARG BUILDX_REPO=https://github.com/docker/buildx.git
+
+FROM golang:${GO_VERSION}-stretch AS build
+ARG BUILDX_REPO
 RUN git clone "${BUILDX_REPO}" /buildx
 WORKDIR /buildx
-ARG BUILDX_COMMIT=master
+ARG BUILDX_COMMIT
 RUN git fetch origin "${BUILDX_COMMIT}":build && git checkout build
-RUN go mod download
 ARG GOOS
 ARG GOARCH
 # Keep these essentially no-op var settings for debug purposes.
