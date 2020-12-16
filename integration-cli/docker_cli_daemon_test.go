@@ -177,7 +177,6 @@ func (s *DockerDaemonSuite) TestDaemonRestartUnlessStopped(c *testing.T) {
 
 	// both running
 	testRun(map[string]bool{"top1": true, "top2": true, "exit": true}, "After second daemon restart: ")
-
 }
 
 func (s *DockerDaemonSuite) TestDaemonRestartOnFailure(c *testing.T) {
@@ -223,7 +222,7 @@ func (s *DockerDaemonSuite) TestDaemonRestartWithInvalidBasesize(c *testing.T) {
 	s.d.Start(c)
 
 	oldBasesizeBytes := getBaseDeviceSize(c, s.d)
-	var newBasesizeBytes int64 = 1073741824 //1GB in bytes
+	var newBasesizeBytes int64 = 1073741824 // 1GB in bytes
 
 	if newBasesizeBytes < oldBasesizeBytes {
 		err := s.d.RestartWithError("--storage-opt", fmt.Sprintf("dm.basesize=%d", newBasesizeBytes))
@@ -244,7 +243,7 @@ func (s *DockerDaemonSuite) TestDaemonRestartWithIncreasedBasesize(c *testing.T)
 
 	oldBasesizeBytes := getBaseDeviceSize(c, s.d)
 
-	var newBasesizeBytes int64 = 53687091200 //50GB in bytes
+	var newBasesizeBytes int64 = 53687091200 // 50GB in bytes
 
 	if newBasesizeBytes < oldBasesizeBytes {
 		c.Skip(fmt.Sprintf("New base device size (%v) must be greater than (%s)", units.HumanSize(float64(newBasesizeBytes)), units.HumanSize(float64(oldBasesizeBytes))))
@@ -608,16 +607,16 @@ func (s *DockerDaemonSuite) TestDaemonKeyGeneration(c *testing.T) {
 // Note that this explicitly tests the conflict of {-b,--bridge} and {--bip} options as the means
 // to get a daemon init failure; no other tests for -b/--bip conflict are therefore required
 func (s *DockerDaemonSuite) TestDaemonExitOnFailure(c *testing.T) {
-	//attempt to start daemon with incorrect flags (we know -b and --bip conflict)
+	// attempt to start daemon with incorrect flags (we know -b and --bip conflict)
 	if err := s.d.StartWithError("--bridge", "nosuchbridge", "--bip", "1.1.1.1"); err != nil {
-		//verify we got the right error
+		// verify we got the right error
 		if !strings.Contains(err.Error(), "Daemon exited") {
 			c.Fatalf("Expected daemon not to start, got %v", err)
 		}
 		// look in the log and make sure we got the message that daemon is shutting down
 		icmd.RunCommand("grep", "failed to start daemon", s.d.LogFileName()).Assert(c, icmd.Success)
 	} else {
-		//if we didn't get an error and the daemon is running, this is a failure
+		// if we didn't get an error and the daemon is running, this is a failure
 		c.Fatal("Conflicting options should cause the daemon to error out with a failure")
 	}
 }
@@ -741,7 +740,7 @@ func (s *DockerDaemonSuite) TestDaemonRestartWithBridgeIPChange(c *testing.T) {
 
 	s.d.Start(c, "--bip", bridgeIP)
 
-	//check if the iptables contains new bridgeIP MASQUERADE rule
+	// check if the iptables contains new bridgeIP MASQUERADE rule
 	ipTablesSearchString := bridgeIPNet.String()
 	icmd.RunCommand("iptables", "-t", "nat", "-nvL").Assert(c, icmd.Expected{
 		Out: ipTablesSearchString,
@@ -1285,7 +1284,7 @@ func (s *DockerDaemonSuite) TestDaemonWithWrongkey(c *testing.T) {
 		c.Fatalf("Error Unmarshal: %s", err)
 	}
 
-	//replace config.Kid with the fake value
+	// replace config.Kid with the fake value
 	config.Kid = "VSAJ:FUYR:X3H2:B2VZ:KZ6U:CJD5:K7BX:ZXHY:UZXT:P4FT:MJWG:HRJ4"
 
 	// NEW Data-Struct to byte[]
@@ -1894,7 +1893,7 @@ func (s *DockerDaemonSuite) TestDaemonNoSpaceLeftOnDeviceError(c *testing.T) {
 	defer mount.Unmount(testDir)
 
 	// create a 3MiB image (with a 2MiB ext4 fs) and mount it as graph root
-	// Why in a container? Because `mount` sometimes behaves weirdly and often fails outright on this test in debian:buster (which is what the test suite runs under if run from the Makefile)
+	// Why in a container? Because `mount` sometimes behaves weirdly and often fails outright on this test in debian:bullseye (which is what the test suite runs under if run from the Makefile)
 	dockerCmd(c, "run", "--rm", "-v", testDir+":/test", "busybox", "sh", "-c", "dd of=/test/testfs.img bs=1M seek=3 count=0")
 	icmd.RunCommand("mkfs.ext4", "-F", filepath.Join(testDir, "testfs.img")).Assert(c, icmd.Success)
 
@@ -1905,8 +1904,8 @@ func (s *DockerDaemonSuite) TestDaemonNoSpaceLeftOnDeviceError(c *testing.T) {
 	defer s.d.Stop(c)
 
 	// pull a repository large enough to overfill the mounted filesystem
-	pullOut, err := s.d.Cmd("pull", "debian:stretch")
-	assert.Assert(c, err != nil, "%s", pullOut)
+	pullOut, err := s.d.Cmd("pull", "debian:bullseye")
+	assert.Assert(c, err != nil, pullOut)
 	assert.Assert(c, strings.Contains(pullOut, "no space left on device"))
 }
 
@@ -2121,7 +2120,6 @@ func (s *DockerDaemonSuite) TestDaemonRestartWithKilledRunningContainer(t *testi
 	if out != "143" {
 		t.Fatalf("Expected exit code '%s' got '%s' for container '%s'\n", "143", out, cid)
 	}
-
 }
 
 // os.Kill should kill daemon ungracefully, leaving behind live containers.
