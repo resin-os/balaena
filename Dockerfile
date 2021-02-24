@@ -5,7 +5,7 @@ ARG SYSTEMD="false"
 # IMPORTANT: When updating this please note that stdlib archive/tar pkg is vendored
 ARG GO_VERSION=1.13.15
 ARG DEBIAN_FRONTEND=noninteractive
-ARG VPNKIT_VERSION=0.4.0
+ARG VPNKIT_VERSION=0.5.0
 ARG DOCKER_BUILDTAGS="no_btrfs no_cri no_devmapper no_zfs exclude_disk_quota exclude_graphdriver_btrfs exclude_graphdriver_devicemapper exclude_graphdriver_zfs no_buildkit"
 
 ARG BASE_DEBIAN_DISTRO="buster"
@@ -206,7 +206,13 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 COPY ./contrib/dockerd-rootless.sh /build
 COPY ./contrib/dockerd-rootless-setuptool.sh /build
 
-FROM djs55/vpnkit:${VPNKIT_VERSION} AS vpnkit
+FROM --platform=amd64 djs55/vpnkit:${VPNKIT_VERSION} AS vpnkit-amd64
+
+FROM --platform=arm64 djs55/vpnkit:${VPNKIT_VERSION} AS vpnkit-arm64
+
+FROM scratch AS vpnkit
+COPY --from=vpnkit-amd64 /vpnkit /build/vpnkit.x86_64
+COPY --from=vpnkit-arm64 /vpnkit /build/vpnkit.aarch64
 
 # TODO: Some of this is only really needed for testing, it would be nice to split this up
 FROM runtime-dev AS dev-systemd-false
@@ -270,7 +276,7 @@ COPY --from=gotestsum     /build/ /usr/local/bin/
 COPY --from=golangci_lint /build/ /usr/local/bin/
 COPY --from=shfmt         /build/ /usr/local/bin/
 COPY --from=rootlesskit   /build/ /usr/local/bin/
-COPY --from=vpnkit        /vpnkit /usr/local/bin/vpnkit.x86_64
+COPY --from=vpnkit        /build/ /usr/local/bin/
 ENV PATH=/usr/local/cli:$PATH
 ARG DOCKER_BUILDTAGS
 ENV DOCKER_BUILDTAGS="${DOCKER_BUILDTAGS}"
@@ -314,7 +320,7 @@ ENV PREFIX=/build
 # It would be nice to handle this in a different way.
 COPY --from=tini        /build/ /usr/local/bin/
 COPY --from=rootlesskit /build/ /usr/local/bin/
-COPY --from=vpnkit      /vpnkit /usr/local/bin/vpnkit.x86_64
+COPY --from=vpnkit      /build/ /usr/local/bin/
 WORKDIR /go/src/github.com/docker/docker
 
 FROM binary-base AS build-binary
