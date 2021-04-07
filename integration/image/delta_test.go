@@ -2,8 +2,10 @@ package image
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/docker/docker/api/types"
@@ -25,7 +27,9 @@ func TestDelta(t *testing.T) {
 		client = testEnv.APIClient()
 	)
 
-	pullBaseAndTargetImages(t, client, base, target)
+	if err := pullImages(client, []string{base, target}); err != nil {
+		t.Fatal(err)
+	}
 
 	rc, err = client.ImageDelta(ctx,
 		base,
@@ -36,7 +40,8 @@ func TestDelta(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Creating delta: %s", err)
 	}
-	io.Copy(ioutil.Discard, rc)
+	// io.Copy(ioutil.Discard, rc)
+	io.Copy(os.Stdout, rc)
 	rc.Close()
 
 	_, _, err = client.ImageInspectWithRaw(ctx, delta)
@@ -45,28 +50,28 @@ func TestDelta(t *testing.T) {
 	}
 }
 
-func pullBaseAndTargetImages(t *testing.T, client apiclient.APIClient, base, target string) {
+func pullImages(client apiclient.APIClient, images []string) error {
 	var (
 		err error
 		rc  io.ReadCloser
 		ctx = context.Background()
 	)
 
-	rc, err = client.ImagePull(ctx,
-		base,
-		types.ImagePullOptions{})
-	if err != nil {
-		t.Fatalf("Pulling delta base: %s", err)
+	for _, image := range images {
+		rc, err = client.ImagePull(ctx,
+			image,
+			types.ImagePullOptions{
+				All:           false,
+				RegistryAuth:  "",
+				PrivilegeFunc: nil,
+				Platform:      "",
+			})
+		if err != nil {
+			return fmt.Errorf("Failed to pull image %q: %s", image, err)
+		}
+		io.Copy(ioutil.Discard, rc)
+		rc.Close()
 	}
-	io.Copy(ioutil.Discard, rc)
-	rc.Close()
 
-	rc, err = client.ImagePull(ctx,
-		target,
-		types.ImagePullOptions{})
-	if err != nil {
-		t.Fatalf("Pulling delta target: %s", err)
-	}
-	io.Copy(ioutil.Discard, rc)
-	rc.Close()
+	return nil
 }
