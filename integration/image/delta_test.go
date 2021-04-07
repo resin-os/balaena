@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"os"
 	"testing"
 
 	"github.com/docker/docker/api/types"
@@ -22,7 +21,6 @@ func TestDelta(t *testing.T) {
 
 	var (
 		err    error
-		rc     io.ReadCloser
 		ctx    = context.Background()
 		client = testEnv.APIClient()
 	)
@@ -31,18 +29,9 @@ func TestDelta(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	rc, err = client.ImageDelta(ctx,
-		base,
-		target,
-		types.ImageDeltaOptions{
-			Tag: delta,
-		})
-	if err != nil {
-		t.Fatalf("Creating delta: %s", err)
+	if err := doDelta(client, base, target, delta); err != nil {
+		t.Fatal(err)
 	}
-	// io.Copy(ioutil.Discard, rc)
-	io.Copy(os.Stdout, rc)
-	rc.Close()
 
 	_, _, err = client.ImageInspectWithRaw(ctx, delta)
 	if err != nil {
@@ -73,5 +62,21 @@ func pullImages(client apiclient.APIClient, images []string) error {
 		rc.Close()
 	}
 
+	return nil
+}
+
+func doDelta(client apiclient.APIClient, source, target, tag string) error {
+	rc, err := client.ImageDelta(context.Background(),
+		source,
+		target,
+		types.ImageDeltaOptions{
+			Tag: tag,
+		})
+	if err != nil {
+		return fmt.Errorf("Creating delta: %s", err)
+	}
+	io.Copy(ioutil.Discard, rc)
+	// io.Copy(os.Stdout, rc)
+	rc.Close()
 	return nil
 }
