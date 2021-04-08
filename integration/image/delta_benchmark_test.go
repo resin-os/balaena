@@ -7,11 +7,9 @@ import (
 
 func BenchmarkDelta(b *testing.B) {
 	var (
-		base    = "balena/open-balena-base:11.1.1"
-		target1 = "balena/open-balena-api:0.134.0"
-		delta1  = "delta-base-api"
-		target2 = "balena/open-balena-vpn:9.17.9"
-		delta2  = "delta-base-vpn"
+		base   = "balena/open-balena-base:11.1.1"
+		target = "balena/open-balena-api:0.134.0"
+		delta  = "delta-base-api"
 	)
 
 	var (
@@ -19,14 +17,13 @@ func BenchmarkDelta(b *testing.B) {
 		client = testEnv.APIClient()
 	)
 
-	if err := pullImages(client, []string{base, target1, target2}); err != nil {
+	if err := pullImages(client, []string{base, target, "hello-world:latest"}); err != nil {
 		b.Fatal(err)
 	}
 
 	var (
-		baseSize    int64
-		target1Size int64
-		target2Size int64
+		baseSize   int64
+		targetSize int64
 	)
 	{
 		res, _, err := client.ImageInspectWithRaw(ctx, base)
@@ -36,61 +33,36 @@ func BenchmarkDelta(b *testing.B) {
 		baseSize = res.Size
 	}
 	{
-		res, _, err := client.ImageInspectWithRaw(ctx, target1)
+		res, _, err := client.ImageInspectWithRaw(ctx, target)
 		if err != nil {
-			b.Fatalf("Inspecting image %q: %s", target1, err)
+			b.Fatalf("Inspecting image %q: %s", target, err)
 		}
-		target1Size = res.Size
+		targetSize = res.Size
 	}
+
+	// warm cache, generates the signature for base
+	if err := doDelta(client, base, "hello-world:latest", "delta-warm-cache"); err != nil {
+		b.Fatal(err)
+	}
+
+	b.SetBytes(baseSize + targetSize)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if err := doDelta(client, base, target, delta); err != nil {
+			b.Fatal(err)
+		}
+	}
+	b.StopTimer()
+
+	var deltaSize int64
 	{
-		res, _, err := client.ImageInspectWithRaw(ctx, target2)
+		res, _, err := client.ImageInspectWithRaw(ctx, delta)
 		if err != nil {
-			b.Fatalf("Inspecting image %q: %s", target2, err)
+			b.Fatalf("Inspecting delta: %s", err)
 		}
-		target2Size = res.Size
+		deltaSize = res.Size
 	}
-
-	b.Run("BaseToTarget1", func(b *testing.B) {
-		b.SetBytes(baseSize + target1Size)
-		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
-			if err := doDelta(client, base, target1, delta1); err != nil {
-				b.Fatal(err)
-			}
-		}
-		b.StopTimer()
-		var deltaSize int64
-		{
-			res, _, err := client.ImageInspectWithRaw(ctx, delta1)
-			if err != nil {
-				b.Fatalf("Inspecting delta: %s", err)
-			}
-			deltaSize = res.Size
-		}
-		b.Logf("base   size:    %v bytes", baseSize)
-		b.Logf("target size:    %v bytes", target1Size)
-		b.Logf("delta  size:    %v bytes, %.2fx improvement", deltaSize, (float64(target1Size) / float64(deltaSize)))
-	})
-
-	b.Run("BaseToTarget2", func(b *testing.B) {
-		b.SetBytes(baseSize + target2Size)
-		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
-			if err := doDelta(client, base, target2, delta2); err != nil {
-				b.Fatal(err)
-			}
-		}
-		b.StopTimer()
-		var deltaSize int64
-		{
-			res, _, err := client.ImageInspectWithRaw(ctx, delta2)
-			if err != nil {
-				b.Fatalf("Inspecting delta: %s", err)
-			}
-			deltaSize = res.Size
-		}
-		b.Logf("base   size:    %v bytes", baseSize)
-		b.Logf("target size:    %v bytes", target2Size)
-		b.Logf("delta  size:    %v bytes, %.2fx improvement", deltaSize, (float64(target2Size) / float64(deltaSize)))
-	})
+	b.Logf("base   size:    %v bytes", baseSize)
+	b.Logf("target size:    %v bytes", targetSize)
+	b.Logf("delta  size:    %v bytes, %.2fx improvement", deltaSize, (float64(targetSize) / float64(deltaSize)))
 }
