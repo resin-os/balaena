@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	librsync "github.com/balena-os/librsync-go"
+	"github.com/balena-os/librsync-go"
 	"github.com/docker/distribution/reference"
 	"github.com/docker/docker/api/types"
 	containertypes "github.com/docker/docker/api/types/container"
@@ -23,8 +23,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
-
-var sigMap = make(map[string]*librsync.SignatureType)
 
 // DeltaCreate creates a delta of the specified src and dest images
 // This is called directly from the Engine API
@@ -58,18 +56,12 @@ func (i *ImageService) DeltaCreate(deltaSrc, deltaDest string, options types.Ima
 	progressReader := progress.NewProgressReader(srcData, progressOutput, srcDataLen, deltaSrc, "Fingerprinting")
 	defer progressReader.Close()
 
-	srcSig, ok := sigMap[srcImg.ID().String()]
-	if !ok {
-		var err error
-		srcSig, err = librsync.Signature(bufio.NewReaderSize(progressReader, 65536), ioutil.Discard, 512, 32, librsync.BLAKE2_SIG_MAGIC)
-		if err != nil {
-			return err
-		}
-		progress.Update(progressOutput, deltaSrc, "Fingerprint complete")
-		sigMap[srcImg.ID().String()] = srcSig
-	} else {
-		progress.Update(progressOutput, deltaSrc, "Fingerprint cache hit")
+	srcSig, err := librsync.Signature(bufio.NewReaderSize(progressReader, 65536), ioutil.Discard, 512, 32, librsync.BLAKE2_SIG_MAGIC)
+	if err != nil {
+		return err
 	}
+
+	progress.Update(progressOutput, deltaSrc, "Fingerprint complete")
 
 	deltaRootFS := image.NewRootFS()
 
