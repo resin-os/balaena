@@ -1,4 +1,31 @@
 - commits:
+    - subject: 'integration: Don''t skip a bunch of tests'
+      hash: 37ea7897f165ad174641d1ace6161a7e601993ec
+      body: ''
+      footer:
+        Change-type: patch
+        change-type: patch
+        Signed-off-by: Robert Günzler <robertg@balena.io>
+        signed-off-by: Robert Günzler <robertg@balena.io>
+      author: Robert Günzler
+      nested: []
+    - subject: Add build script using buildx
+      hash: a7020bf3008e8a7b13917c97c5fedc7803ed5782
+      body: |
+        Repo type remains unchanged even though CI will trigger the
+        build-in-container task for the engine now.
+        We need the balena-engine type here to ensure versioning works with the
+        engine specific quirks.
+      footer:
+        Change-type: patch
+        change-type: patch
+        Signed-off-by: Robert Günzler <robertg@balena.io>
+        signed-off-by: Robert Günzler <robertg@balena.io>
+      author: Robert Günzler
+      nested: []
+  version: 19.03.19
+  date: 2021-05-18T20:49:13.119Z
+- commits:
     - subject: Add aufs to overlay2 migrator
       hash: b3a976b1294469e75222752bdc1fdc06bfcc97b8
       body: |
