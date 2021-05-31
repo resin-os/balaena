@@ -4,8 +4,7 @@ GOTESTSUM_COMMIT='v0.3.5'
 
 install_gotestsum() (
 	set -e
-	export GO111MODULE=on
-	go get -d "gotest.tools/gotestsum@${GOTESTSUM_COMMIT}"
+	go get -d "gotest.tools/gotestsum"
 	go build -buildmode=pie -o "${PREFIX}/gotestsum" 'gotest.tools/gotestsum'
 
 )
