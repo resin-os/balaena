@@ -1,0 +1,11 @@
+{
+    "id": "faked:001-dest",
+    "os": "fakeOS",
+    "rootFS": {
+        "type": "layers",
+        "diff_ids": [
+            "faked:001-foo",
+            "faked:001-bar"
+        ]
+    }
+}
