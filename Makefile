@@ -189,9 +189,15 @@ test-integration-cli: test-integration ## (DEPRECATED) use test-integration
 ifneq ($(and $(TEST_SKIP_INTEGRATION),$(TEST_SKIP_INTEGRATION_CLI)),)
 test-integration:
 	@echo Both integrations suites skipped per environment variables
+
+test-integration-with-debugger:
+	@echo Both integrations suites skipped per environment variables
 else
 test-integration: build ## run the integration tests
 	$(DOCKER_RUN_DOCKER) hack/make.sh dynbinary-balena test-integration
+
+test-integration-with-debugger:
+	$(DOCKER_RUN_DOCKER) hack/make.sh dynbinary-balena test-integration-with-debugger
 endif
 
 test-integration-flaky: build ## run the stress test for all new integration tests

@@ -105,7 +105,7 @@ build_test_suite_binary() {
 	local dir="$1"
 	local out="$2"
 	echo Building test suite binary "$dir/$out"
-	go test -c -o "$dir/$out" -ldflags "$LDFLAGS" "${BUILDFLAGS[@]}" "$dir"
+	GO111MODULE=off go test -c -o "$dir/$out" -ldflags "$LDFLAGS" "${BUILDFLAGS[@]}" "$dir"
 }
 
 cleanup_test_suite_binaries() {
