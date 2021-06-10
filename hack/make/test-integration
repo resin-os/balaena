@@ -13,6 +13,7 @@ fi
 	build_test_suite_binaries
 	bundle .integration-daemon-start
 	bundle .integration-daemon-setup
+	build_delta_test_images
 
 	testexit=0
 	( repeat run_test_integration ) || testexit=$?
