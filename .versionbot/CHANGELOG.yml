@@ -1,4 +1,22 @@
 - commits:
+    - subject: 'overlay2: sync only dest fs after applying diff'
+      hash: 33c492cb5dacff7d902f45f219a74a03f11fe4b7
+      body: |
+        Currently, ApplyDiff() syncs all mounted filesystems after writing when
+        syncDiffs is enabled. We've seen some odd cases of the sync hanging
+        where a targeted syncfs has no problems.
+
+        Optimize this slightly by only syncing the filesystem we've written to.
+      footer:
+        Change-type: patch
+        change-type: patch
+        Signed-off-by: Joseph Kogut <joseph@balena.io>
+        signed-off-by: Joseph Kogut <joseph@balena.io>
+      author: Joseph Kogut
+      nested: []
+  version: 19.03.21
+  date: 2021-06-17T14:53:25.687Z
+- commits:
     - subject: 'pkg/storagemigration: poperly handle errors during state creation'
       hash: b8170db554ac1d1abb3adcfe1f6265701e9147c5
       body: ''
