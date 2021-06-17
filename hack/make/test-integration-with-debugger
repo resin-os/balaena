@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -e -o pipefail
 
+IS_DEBUGGING=true
 source hack/make/.integration-test-helpers
 
 if [ ! -z "${TEST_SKIP_INTEGRATION}" ] && [ ! -z "${TEST_SKIP_INTEGRATION_CLI}" ]; then

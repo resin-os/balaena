@@ -170,7 +170,9 @@ error_on_leaked_containerd_shims() {
 
 set_platform_timeout() {
 	# Test timeout.
-	if [ "${DOCKER_ENGINE_GOARCH}" = "arm64" ] || [ "${DOCKER_ENGINE_GOARCH}" = "arm" ]; then
+	if [ $IS_DEBUGGING = "true" ]; then
+		: "${TIMEOUT:=360m}"
+	elif [ "${DOCKER_ENGINE_GOARCH}" = "arm64" ] || [ "${DOCKER_ENGINE_GOARCH}" = "arm" ]; then
 		: "${TIMEOUT:=10m}"
 	elif [ "${DOCKER_ENGINE_GOARCH}" = "windows" ]; then
 		: "${TIMEOUT:=8m}"
