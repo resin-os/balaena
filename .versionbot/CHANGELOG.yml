@@ -1,4 +1,29 @@
 - commits:
+    - subject: 'distribution: add back resumable pulls'
+      hash: 9442318767bf085c393ef826396be5808dff5d05
+      body: |
+        Upstream docker supports resuming pulls after transient failures using
+        HTTP range requests. In commit 565fc34, this was replaced with streaming
+        the tarball directly to disk, obviating the need for a temporary file,
+        and reducing the amount of free space required to download images.
+
+        It also aimed to reduce the writes to flash memory. In practice, this
+        tends to cause more writes when large images fail to download, and
+        the download is forced to restart. On unstable connections with very
+        large images, the download never completes.
+
+        Add back the upstream method with resumable pulls in place of the
+        streaming approach.
+      footer:
+        Change-type: patch
+        change-type: patch
+        Signed-off-by: Joseph Kogut <joseph@balena.io>
+        signed-off-by: Joseph Kogut <joseph@balena.io>
+      author: Joseph Kogut
+      nested: []
+  version: 19.03.22
+  date: 2021-06-28T23:53:10.900Z
+- commits:
     - subject: Lock destination layers while delta is being processed
       hash: 0ad4281e11e4d3ef263010787aecd244c0ce333d
       body: |
