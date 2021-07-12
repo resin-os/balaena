@@ -14,7 +14,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
 
 	"github.com/docker/docker/daemon/graphdriver"
 	"github.com/docker/docker/daemon/graphdriver/overlayutils"
@@ -688,9 +687,12 @@ func (d *Driver) ApplyDiff(id string, parent string, diff io.Reader) (size int64
 	}
 
 	if d.options.syncDiffs {
-		// FIXME: Instead of syncing all the filesystems we should be fsyncing each
-		// file as the tar archive gets unpacked
-		syscall.Sync()
+		if fd, err := unix.Open(applyDir, unix.O_RDONLY, 0); err != nil {
+			logger.Errorf("unable to open applyDir for sync: %v", err)
+		} else {
+			unix.Syncfs(fd)
+			unix.Close(fd)
+		}
 	}
 
 	return directory.Size(context.TODO(), applyDir)
