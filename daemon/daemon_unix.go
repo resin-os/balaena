@@ -44,7 +44,8 @@ import (
 	lntypes "github.com/docker/libnetwork/types"
 	"github.com/opencontainers/runc/libcontainer/cgroups"
 	rsystem "github.com/opencontainers/runc/libcontainer/system"
-	"github.com/opencontainers/runtime-spec/specs-go"
+	specs "github.com/opencontainers/runtime-spec/specs-go"
+	"github.com/opencontainers/selinux/go-selinux"
 	"github.com/opencontainers/selinux/go-selinux/label"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -828,7 +829,7 @@ func overlaySupportsSelinux() (bool, error) {
 // configureKernelSecuritySupport configures and validates security support for the kernel
 func configureKernelSecuritySupport(config *config.Config, driverName string) error {
 	if config.EnableSelinuxSupport {
-		if !selinuxEnabled() {
+		if !selinux.GetEnabled() {
 			logrus.Warn("Docker could not enable SELinux on the host system")
 			return nil
 		}
@@ -846,7 +847,7 @@ func configureKernelSecuritySupport(config *config.Config, driverName string) er
 			}
 		}
 	} else {
-		selinuxSetDisabled()
+		selinux.SetDisabled()
 	}
 	return nil
 }
@@ -908,7 +909,8 @@ func driverOptions(config *config.Config) []nwconfig.Option {
 		"EnableIPForwarding":  config.BridgeConfig.EnableIPForward,
 		"EnableIPTables":      config.BridgeConfig.EnableIPTables,
 		"EnableUserlandProxy": config.BridgeConfig.EnableUserlandProxy,
-		"UserlandProxyPath":   config.BridgeConfig.UserlandProxyPath}
+		"UserlandProxyPath":   config.BridgeConfig.UserlandProxyPath,
+	}
 	bridgeOption := options.Generic{netlabel.GenericData: bridgeConfig}
 
 	dOptions := []nwconfig.Option{}
@@ -1073,7 +1075,6 @@ func setupInitLayer(idMapping *idtools.IdentityMapping) func(containerfs.Contain
 //
 //  If names are used, they are verified to exist in passwd/group
 func parseRemappedRoot(usergrp string) (string, string, error) {
-
 	var (
 		userID, groupID     int
 		username, groupname string

@@ -3,7 +3,7 @@
 set -e
 rm -rf "$DEST"
 
-if ! command -v balena-engine-daemon &> /dev/null; then
+if ! command -v balena-engine-daemon &>/dev/null; then
 	echo >&2 'error: binary-daemon or dynbinary-daemon must be run before run'
 	false
 fi
@@ -21,10 +21,9 @@ if [ -n "$DOCKER_STORAGE_OPTS" ]; then
 	unset IFS
 fi
 
-
 listen_port=2375
 if [ -n "$DOCKER_PORT" ]; then
-	IFS=':' read -r -a ports <<< "$DOCKER_PORT"
+	IFS=':' read -r -a ports <<<"$DOCKER_PORT"
 	listen_port="${ports[-1]}"
 fi
 
@@ -33,13 +32,33 @@ if [ "$DOCKER_REMAP_ROOT" ]; then
 	extra_params="$extra_params --userns-remap $DOCKER_REMAP_ROOT"
 fi
 
+if [ -n "$DOCKER_EXPERIMENTAL" ]; then
+	extra_params="$extra_params --experimental"
+fi
+
+dockerd="balena-engine-daemon"
+socket=/var/run/balena-engine.sock
+if [ -n "$DOCKER_ROOTLESS" ]; then
+	if [ -z "$DOCKER_EXPERIMENTAL" ]; then
+		echo >&2 '# DOCKER_ROOTLESS requires DOCKER_EXPERIMENTAL to be set'
+		exit 1
+	fi
+	user="unprivilegeduser"
+	uid=$(id -u $user)
+	# shellcheck disable=SC2174
+	mkdir -p -m 700 "/tmp/docker-${uid}"
+	chown $user "/tmp/docker-${uid}"
+	dockerd="sudo -u $user -E XDG_RUNTIME_DIR=/tmp/docker-${uid} -E HOME=/home/${user} -- dockerd-rootless.sh"
+	socket=/tmp/docker-${uid}/balena-engine.sock
+fi
+
 args="--debug \
-<<<<<<< HEAD
-	--host tcp://0.0.0.0:${listen_port} --host unix:///var/run/balena-engine.sock \
+	--host "tcp://0.0.0.0:${listen_port}" --host "unix://${socket}" \
 	--storage-driver "${DOCKER_GRAPHDRIVER}" \
 	--userland-proxy="${DOCKER_USERLANDPROXY}" \
 	$storage_params \
 	$extra_params"
 
-echo balena-engine-daemon ${args}
-exec balena-engine-daemon ${args}
+echo "${dockerd} ${args}"
+# shellcheck disable=SC2086
+exec "${dockerd}" ${args}
