@@ -100,6 +100,20 @@ build_test_suite_binaries() {
 	fi
 }
 
+build_delta_test_images() {
+	echo "Building delta test images"
+
+	pushd integration/testdata/delta
+	balenaEngine="/go/src/github.com/docker/docker/bundles/dynbinary-balena/balena-engine"
+	for d in image-*; do
+		echo "Building delta test image $d"
+		pushd $d
+		$balenaEngine build . --tag "$d"
+		popd
+	done
+	popd
+}
+
 # Build a binary for a test suite package
 build_test_suite_binary() {
 	local dir="$1"
