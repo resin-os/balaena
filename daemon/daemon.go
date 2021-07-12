@@ -121,10 +121,11 @@ type Daemon struct {
 	seccompProfile     []byte
 	seccompProfilePath string
 
-	diskUsageRunning int32
-	pruneRunning     int32
-	hosts            map[string]bool // hosts stores the addresses the daemon is listening on
-	startupDone      chan struct{}
+	diskUsageRunning   int32
+	engineCheckRunning int32
+	pruneRunning       int32
+	hosts              map[string]bool // hosts stores the addresses the daemon is listening on
+	startupDone        chan struct{}
 
 	attachmentStore       network.AttachmentStore
 	attachableNetworkLock *locker.Locker
@@ -1145,6 +1146,14 @@ func NewDaemon(ctx context.Context, config *config.Config, pluginStore *plugin.S
 		return nil, err
 	}
 	close(d.startupDone)
+
+	unused, err := d.EngineCheck(ctx)
+	if err != nil {
+		logrus.Errorf("layerStore (%s) engine check failed: %s", ls.DriverName(), err)
+	}
+	if unused > 0 {
+		logrus.Debugf("layerStore (%s) engine check removed (%s) unused layers", ls.DriverName(), unused)
+	}
 
 	// FIXME: this method never returns an error
 	info, _ := d.SystemInfo()
